@@ -13,6 +13,7 @@ Provides: ofono-configs-binder
 Provides: ofono-configs
 Requires: droid-config-halium
 Requires: acl
+Requires: pulseaudio-modules-droid >= 14.2.110-1.26.2.blueline
 AutoReqProv: no
 %include droid-configs-device/droid-configs.inc
 %include patterns/patterns-sailfish-device-adaptation-halium-blueline.inc
