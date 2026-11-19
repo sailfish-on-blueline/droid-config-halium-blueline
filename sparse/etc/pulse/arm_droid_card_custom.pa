@@ -1,0 +1,1 @@
+load-module module-droid-card rate=48000 source_rate=48000 source_format=s24-32le use_legacy_stream_set_parameters=true

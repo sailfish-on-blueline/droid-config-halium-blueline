@@ -1,0 +1,5 @@
+SUBSYSTEM=="video4linux", RUN+="/usr/bin/setfacl -m g:camera:rw $env{DEVNAME}"
+SUBSYSTEM=="media", RUN+="/usr/bin/setfacl -m g:camera:rw $env{DEVNAME}"
+# The vendor allocator uses the Android graphics group.
+KERNEL=="ion", RUN+="/usr/bin/setfacl -m g:camera:rw,g:graphics:rw $env{DEVNAME}"
+KERNEL=="kgsl-3d0", RUN+="/usr/bin/setfacl -m g:graphics:rw $env{DEVNAME}"

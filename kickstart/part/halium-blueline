@@ -1,0 +1,1 @@
+part / --size=8192 --fstype=ext4 --label=SFOSROOT

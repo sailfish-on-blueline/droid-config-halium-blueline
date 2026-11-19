@@ -1,0 +1,2 @@
+# Android FMQ clients allocate shared memory through this device.
+SUBSYSTEM=="misc", KERNEL=="ashmem", MODE="0666"

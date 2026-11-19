@@ -1,0 +1,35 @@
+--- a/usr/share/fingerterm/Main.qml
++++ b/usr/share/fingerterm/Main.qml
+@@ -183,6 +183,8 @@
+                 property var pressedKeys: ({})
+ 
+                 anchors.fill: parent
++                enabled: !aboutDialog.show && !errorDialog.show
++                         && !urlWindow.show && !layoutWindow.show && !menu.showing
+ 
+                 onPressed: {
+                     touchPoints.forEach(function (touchPoint) {
+@@ -246,6 +248,23 @@
+                         delete multiTouchArea.pressedKeys[touchPoint.pointId]
+                     })
+                 }
++                onCanceled: {
++                    touchPoints.forEach(function (touchPoint) {
++                        if (multiTouchArea.firstTouchId == touchPoint.pointId) {
++                            multiTouchArea.firstTouchId = -1
++                        }
++                        var key = multiTouchArea.pressedKeys[touchPoint.pointId]
++                        if (key != null) {
++                            // Finish interrupted key presses outside the keyboard.
++                            key.becomesSticky = key.stickiness > 0
++                            key.handleRelease(multiTouchArea, -1, -1)
++                            if (vkb.currentStickyPressed == key) {
++                                vkb.currentStickyPressed = null
++                            }
++                        }
++                        delete multiTouchArea.pressedKeys[touchPoint.pointId]
++                    })
++                }
+             }
+ 
+             MouseArea {

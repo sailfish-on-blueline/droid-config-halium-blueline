@@ -1,0 +1,13 @@
+[Unit]
+Description=Select the Pixel 3 physical SIM slot
+Requires=droid-hal-init.service
+After=droid-hal-init.service
+Before=ofono.service
+
+[Service]
+Type=oneshot
+User=radio
+ExecStart=/usr/bin/binder-call -q -d /dev/hwbinder -o android.hardware.radio.config@1.0::IRadioConfig/default 3 1 "[ 0 ]"
+RemainAfterExit=yes
+SuccessExitStatus=2
+TimeoutStartSec=30

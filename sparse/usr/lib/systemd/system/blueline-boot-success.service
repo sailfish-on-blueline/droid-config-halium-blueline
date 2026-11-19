@@ -1,0 +1,13 @@
+[Unit]
+Description=Mark the current Pixel 3 boot slot successful through its Android HAL
+Requires=droid-hal-init.service
+After=droid-hal-init.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/droid/blueline-mark-boot-successful.sh
+TimeoutStartSec=120
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

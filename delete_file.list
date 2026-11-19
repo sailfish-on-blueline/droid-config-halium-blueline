@@ -1,0 +1,3 @@
+# The generic Halium RPM owns container startup and its systemd unit.
+/usr/bin/droid/droid-hal-startup.sh
+/usr/lib/systemd/system/droid-hal-init.service

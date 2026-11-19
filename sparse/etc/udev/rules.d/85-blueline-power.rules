@@ -1,0 +1,3 @@
+# The wireless PRESENT attribute reports receiver availability.
+# MCE needs the connection state supplied by ONLINE.
+SUBSYSTEM=="power_supply", KERNEL=="wireless", ACTION=="add|change", ENV{POWER_SUPPLY_PRESENT}="$attr{online}"

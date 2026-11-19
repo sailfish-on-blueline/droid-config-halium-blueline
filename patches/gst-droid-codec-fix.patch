@@ -1,0 +1,119 @@
+diff --git a/gst-libs/gst/droid/gstdroidcodec.c b/gst-libs/gst/droid/gstdroidcodec.c
+index 09e41a9..39132d6 100644
+--- a/gst-libs/gst/droid/gstdroidcodec.c
++++ b/gst-libs/gst/droid/gstdroidcodec.c
+@@ -156,7 +156,7 @@ static GstDroidCodecInfo codecs[] = {
+ 
+   /* audio encoders */
+   {GST_DROID_CODEC_ENCODER_AUDIO, "audio/mpeg", "audio/mp4a-latm",
+-        "audio/mpeg, mpegversion=(int)4, stream-format=(string){raw}"
++        "audio/mpeg, mpegversion=(int)4, stream-format=(string)raw"
+         CAPS_FRAGMENT_AUDIO_ENCODER, TRUE,
+       is_mpeg4v, NULL, create_mpeg4venc_codec_data, NULL, NULL, NULL, NULL},
+ 
+@@ -470,18 +470,19 @@ create_h264enc_codec_data (DroidMediaData * data)
+     GstBuffer *buffer = gst_buffer_new_allocate (NULL, nal.size, NULL);
+     gst_buffer_fill (buffer, 0, nal.data + nal.offset, nal.size);
+ 
+-    offset += (nal.size + nal.offset);
++    offset = nal.offset + nal.size;
+ 
+     if (nal.type == GST_H264_NAL_SPS) {
+       if (nal.size >= 4 && !idc_found) {
+         idc_found = TRUE;
+ 
+-        profile_idc = nal.data[1];
+-        profile_comp = nal.data[2];
+-        level_idc = nal.data[3];
++        profile_idc = nal.data[nal.offset + 1];
++        profile_comp = nal.data[nal.offset + 2];
++        level_idc = nal.data[nal.offset + 3];
+       } else if (nal.size >= 4) {
+-        if (profile_idc != nal.data[1] || profile_comp != nal.data[2] ||
+-            level_idc != nal.data[3]) {
++        if (profile_idc != nal.data[nal.offset + 1] ||
++            profile_comp != nal.data[nal.offset + 2] ||
++            level_idc != nal.data[nal.offset + 3]) {
+           GST_ERROR ("Inconsistency in SPS");
+           goto out;
+         }
+@@ -1089,29 +1090,62 @@ process_aacdec_data (GstDroidCodec * codec, GstBuffer * buffer,
+ static gboolean
+ process_h264enc_data (DroidMediaData * in, DroidMediaData * out)
+ {
+-  guint32 size;
+-  guint8 *data;
++  GstH264NalParser *parser;
++  GstH264NalUnit nal;
++  GstH264ParserResult res;
++  GstByteWriter *writer;
++  gsize offset = 0;
++  gboolean ret = FALSE;
++  gboolean has_start_code;
+ 
+-  if (in->size >= 4 && memcmp (in->data, "\x00\x00\x00\x01", 4) == 0) {
+-    /* We will replace the first 4 bytes with the NAL size */
+-    out->size = in->size;
+-    data = in->data + 4;
+-  } else {
+-    /* We don't have the NAL prefix so we add 4 bytes for the NAL size */
+-    out->size = in->size + 4;
+-    data = in->data;
++  if (!in->data || in->size <= 0 || in->size > G_MAXUINT) {
++    return FALSE;
+   }
+ 
+-  size = GUINT32_TO_BE (out->size - 4);
+-  out->data = g_malloc (out->size);
+-  if (!out->data) {
+-    return FALSE;
++  parser = gst_h264_nal_parser_new ();
++  writer = gst_byte_writer_new_with_size (in->size, FALSE);
++  has_start_code =
++      (in->size >= 4 && memcmp (in->data, "\x00\x00\x00\x01", 4) == 0) ||
++      (in->size >= 3 && memcmp (in->data, "\x00\x00\x01", 3) == 0);
++  res = gst_h264_parser_identify_nalu (parser, in->data, offset,
++      in->size, &nal);
++
++  if (!has_start_code) {
++    /* Some encoders supply a single NAL without an Annex B start code. */
++    gst_byte_writer_put_uint32_be (writer, in->size);
++    gst_byte_writer_put_data (writer, in->data, in->size);
++  } else {
++    /* Codec2 can place SPS, PPS and a picture in the same access unit. */
++    while (res == GST_H264_PARSER_OK || res == GST_H264_PARSER_NO_NAL_END) {
++      if (!nal.size || nal.offset + nal.size > in->size) {
++        goto out;
++      }
++
++      gst_byte_writer_put_uint32_be (writer, nal.size);
++      gst_byte_writer_put_data (writer, nal.data + nal.offset, nal.size);
++      offset = nal.offset + nal.size;
++      if (offset == in->size) {
++        break;
++      }
++
++      res = gst_h264_parser_identify_nalu (parser, in->data, offset,
++          in->size, &nal);
++    }
++
++    if (res != GST_H264_PARSER_OK && res != GST_H264_PARSER_NO_NAL_END &&
++        res != GST_H264_PARSER_NO_NAL) {
++      goto out;
++    }
+   }
+ 
+-  memcpy (out->data, &size, sizeof (size));
+-  memcpy (out->data + 4, data, out->size - 4);
++  out->size = gst_byte_writer_get_size (writer);
++  out->data = gst_byte_writer_reset_and_get_data (writer);
++  ret = TRUE;
+ 
+-  return TRUE;
++out:
++  gst_byte_writer_free (writer);
++  gst_h264_nal_parser_free (parser);
++  return ret;
+ }
+ 
+ static void

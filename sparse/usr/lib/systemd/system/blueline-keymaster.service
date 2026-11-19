@@ -1,0 +1,11 @@
+[Unit]
+Description=Initialize Pixel 3 hardware authentication token keys
+Requires=droid-hal-init.service
+After=droid-hal-init.service
+Before=sailfish-fpd-community.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/droid/blueline-keymaster-init.sh
+RemainAfterExit=yes
+TimeoutStartSec=30
