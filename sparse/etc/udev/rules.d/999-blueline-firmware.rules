@@ -1,3 +1,3 @@
-# Android ueventd uploads the camera firmware through the kernel fallback.
-# Concurrent uploads can corrupt the ELF image before the driver validates it.
-SUBSYSTEM=="firmware", ACTION=="add", ENV{FIRMWARE}=="CAMERA_ICP.elf", RUN=""
+# The kernel reads vendor firmware directly. Android ueventd handles fallback
+# requests for the hardware services and firmware mounted in the container.
+SUBSYSTEM=="firmware", ACTION=="add", RUN="/bin/true"

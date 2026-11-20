@@ -12,6 +12,8 @@ awk '$2 != "/data" && $2 != "/metadata"' /vendor/etc/fstab.sdm845 \
     > /run/droid-hal/fstab.sdm845.tmp
 mv /run/droid-hal/fstab.sdm845.tmp /run/droid-hal/fstab.sdm845
 mount --bind /run/droid-hal/fstab.sdm845 /vendor/etc/fstab.sdm845
+# Load vendor firmware directly before starting the hardware services.
+printf '%s' /vendor/firmware > /sys/module/firmware_class/parameters/path
 # Android init disables kernel module autoloading. Load the touchscreen
 # drivers before the container starts.
 modprobe ftm5
