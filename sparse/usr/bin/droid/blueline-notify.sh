@@ -32,11 +32,6 @@ get_source_apex_name() {
 
 # Get Android container version
 ANDROID_SDK_VERSION=$(grep ro.build.version.sdk= ${LXC_ROOTFS}/system/build.prop | cut -d "=" -f2)
-if [ $(getconf LONG_BIT) == 32 ]; then
-        LIBDIR="lib"
-else
-        LIBDIR="lib64"
-fi
 
 # Wait for the container
 lxc-wait -n android -t 10 -s "RUNNING"
@@ -46,8 +41,9 @@ if [ $ANDROID_SDK_VERSION -ge 29 ]; then
         info "Detected Android 10+ container"
 
         # Wait for apex to show up
-        HYBRIS_LD_LIBRARY_PATH="/android/system/apex/com.android.runtime/${LIBDIR}/bionic:/android/system/apex/com.android.runtime.release/${LIBDIR}/bionic:/android/system/apex/com.android.runtime.debug/${LIBDIR}/bionic:/android/system/${LIBDIR}" \
-                /usr/bin/droid/waitforservice apexd.status ready
+        until [ "$(lxc-attach -n android -- /system/bin/getprop apexd.status)" = ready ]; do
+                sleep 1
+        done
 
         info "apexd ready, replicating bind-mounts"
         for mpoint in /apex/*; do
